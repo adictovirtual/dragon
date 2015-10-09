@@ -4,6 +4,8 @@ var EventsMixin         = require('../events'),
 var createElement       = require('virtual-dom/create-element'),
     diff                = require('virtual-dom/diff'),
     extractFromTemplate = require('./helpers/extractFromTemplate'),
+    h                   = require('virtual-dom/h'),
+    parser              = require('html2hscript'),
     patch               = require('virtual-dom/patch'),
     VNode               = require('virtual-dom/vnode/vnode'),
     VText               = require('virtual-dom/vnode/vtext')
@@ -96,10 +98,10 @@ class DragonBaseView {
         switch(this.attachPlacement) {
 
           // Attach before all other children in container
-          case 'first': $container['prependChild'](this._vel); break;
+          case 'first': $container['prependChild'](this._rootNode); break;
 
           // Attach normally, after all children in container
-          default: $container['appendChild'](this._vel)
+          default: $container['appendChild'](this._rootNode)
 
         }
 
@@ -391,6 +393,14 @@ class DragonBaseView {
 
   }
 
+  parseTemplate(cb) {
+
+    var template = this.getTemplate()
+
+    parser(template, cb)
+
+  }
+
   /*
   @method render
   @type Function
@@ -400,39 +410,65 @@ class DragonBaseView {
 
   render() {
 
-    var template = this.getTemplate()
+    //var template = this.getTemplate()
 
-    if(!this.tagName) {
+    this.parseTemplate( (err, hscript) => {
+
+      var tree = hscript
+      var tree2 = h('div')
+
+      this._rootNode = createElement(tree)
+      debugger
+      if(this._tree) {
+
+        var newTree = hscript
+        var patches = diff(this._tree, tree)
+        this._rootNode = patch(this._rootNode, patches)
+
+      }
+
+      this._tree = tree
+
+      var extraction = extractFromTemplate(this.getTemplate())
+
+      this.setAttributes(extraction.attributes)
+
+      this.trigger('render')
+
+    })
+
+    /*if(!this.tagName) {
 
       this.tagName = this.getTagName(template)
 
     }
 
+    // first time render
     if(!this.vel) {
 
       this.vel  = convertHTML(template)
 
-      /*
-      While newer versions of VDOM support multiple outer tags, we're gonna stick with one outer tag
-      */
       if(this.vel instanceof Array) this.vel = this.vel[0]
 
       this.vel.tagName = this.tagName
-      this._vel = createElement(this.vel)
+      this._rootNode = createElement(this.vel)
 
     }
 
-    var vel     = convertHTML(template)
-    var patches = diff(this.vel, vel)
+    // nth time render
+    else {
 
-    this._vel   = patch(this._vel, patches)
-    this.vel    = vel
+      var vel        = convertHTML(template)
+      var patches    = diff(this.vel, vel)
+      this._rootNode = patch(this._rootNode, patches)
+      this.vel       = vel
+    }
 
     var extraction = extractFromTemplate(template)
 
     this.setAttributes(extraction.attributes)
 
-    this.trigger('render')
+    this.trigger('render')*/
 
     return this
 
