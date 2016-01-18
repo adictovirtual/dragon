@@ -3,6 +3,7 @@
 import eventsMixin       from '../events'
 import mixin             from '../mixin'
 import utils             from '../utils'
+var {ObjectObserver}=require('observe-js')
 
 class DragonBaseModel {
 
@@ -10,11 +11,10 @@ class DragonBaseModel {
     this.uid = utils.uniqueId(this)
     this.mixin(eventsMixin)
     this.attr = {};
-    this.options = options
-
     Object.assign(this.attr, this.defaults, attr)
-
-    this.observeAttributes()
+    this.options = options
+    this.observer = new ObjectObserver(this.attr);
+    this.observeAttributes();
   }
 
   initialize() {
@@ -34,38 +34,34 @@ class DragonBaseModel {
   TODO: add an an unobserve option
   */
   observeAttributes() {
-
+    var _this = this
     // Trigger changes on model
-    Object.observe(this.attr, (changes) => {
-
-      this.emit('change', changes)
-
-      /*
-      TODO: consider making this a mixin and expanding to watch specific properties
-      */
-
-      var add    = [],
-          del    = [],
-          update = []
-
-      changes.forEach( (change) => {
-
-        switch(change.type) {
-
-          case 'add'    : add.push(change); break;
-          case 'delete' : del.push(change); break;
-          case 'update' : update.push(change); break;
-
-        }
-
-      })
-
-      if(add.length > 0)    this.emit('add', add)
-      if(del.length > 0)    this.emit('delete', del)
-      if(update.length > 0) this.emit('update', update)
-
-    })
-
+    this.observer.open((added, removed, changed, getOldValueFn)=> {
+      var valueChanged = added || removed || changed;
+      console.log("change has been executed by dragon with the value",valueChanged)
+      _this.emit('change', valueChanged)
+      // respond to changes to the obj.
+      Object.keys(added).forEach(function(property) {
+        var value = added[property]
+        _this.emit('add', {property,value})
+        console.log("property added",property)// a property which has been been added to obj
+        console.log("property value",value) // its value
+      });
+      Object.keys(removed).forEach(function(property) {
+        var oldValue = getOldValueFn(property)
+        _this.emit('delete', {property,oldProperty})
+        console.log("property remove",property)// a property which has been been added to obj
+        console.log("is old value",oldValue); // its old value
+      });
+      Object.keys(changed).forEach(function(property) {
+        var oldValue = getOldValueFn(property),
+            changedValue  = changed[property]
+        _this.emit('updated', {property,changedValue})
+        console.log("property updated",property); // a property on obj which has changed value.
+        console.log("value of the property changed",changedValue); // its value
+        console.log("this is the old value",getOldValueFn(property)); // its old value
+      });
+    });
   }
 
   /*
