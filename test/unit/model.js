@@ -28,7 +28,7 @@ describe('Unit: Model', function() {
 
     var model = new ModelB()
 
-    model.attr.foo = 'bar'
+    model.attr.foo = 'bar added'
 
     expect(model.attr.foo).to.be.a('string')
 
@@ -41,7 +41,7 @@ describe('Unit: Model', function() {
     class ModelC extends Dragon.Model {}
 
     ModelC.prototype.defaults = {
-      foo: 'bar'
+      foo: 'bar default'
     }
 
     var model = new ModelC()
@@ -58,7 +58,7 @@ describe('Unit: Model', function() {
 
     var model = new ModelD()
 
-    model.attr.foo = 'bar'
+    model.attr.foo = 'bar changed'
 
     model.on('change', (changes) => {
       console.log("hey jg",changes)
@@ -70,7 +70,11 @@ describe('Unit: Model', function() {
     })
 
   })
-
+  it('should not call the on change above that will make me very unhappy',function(done){
+    class ModelR extends Dragon.Model {}
+    var t = new ModelR()
+    t.attr.hola = "added new test var and prevent other instance change call"
+  })
   it('should not collide changes when observing two different objects from two different models', function(done) {
 
     class ModelE extends Dragon.Model {}
@@ -81,7 +85,7 @@ describe('Unit: Model', function() {
     b.on('change', (changes) => {
 
       console.log("changes in test", changes)
-      expect(changes.length).to.equal(1)
+      expect(changes).to.be.an('object')
 
       done()
 
@@ -98,10 +102,10 @@ describe('Unit: Model', function() {
 
     var model = new ModelFG()
 
-    model.attr.foo = 'bar'
+    model.attr.foo = 'bar added'
 
     model.on('add', (changes) => {
-
+      console.log("add attribute triggered");
       expect(changes).to.be.an('object')
       //     expect(changes[0].type).to.be.a('string')
       //     expect(changes[0].type).to.equal('add')

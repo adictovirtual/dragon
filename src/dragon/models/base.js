@@ -3,13 +3,19 @@
 import eventsMixin       from '../events'
 import mixin             from '../mixin'
 import utils             from '../utils'
+import EventEmitter from 'chrisabrams-eventemitter'
+
 var {ObjectObserver}=require('observe-js')
 
 class DragonBaseModel {
 
   constructor(attr = {}, options = {}) {
+    var eventEmitter = new EventEmitter()
+    this.emit  = eventEmitter.emitEvent.bind(eventEmitter)
+    this.on    = eventEmitter.addListener.bind(eventEmitter)
+    this.once  = eventEmitter.addOnceListener.bind(eventEmitter)
+    this.off   = eventEmitter.removeListener.bind(eventEmitter)
     this.uid = utils.uniqueId(this)
-    this.mixin(eventsMixin)
     this.attr = {};
     Object.assign(this.attr, this.defaults, attr)
     this.options = options
@@ -186,6 +192,5 @@ DragonBaseModel.prototype.indisposable = false
 
 DragonBaseModel.prototype.url = ''
 
-Object.assign(DragonBaseModel.prototype, {mixin})
 
 export default DragonBaseModel
